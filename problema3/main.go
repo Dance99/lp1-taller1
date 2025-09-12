@@ -8,8 +8,8 @@ import (
 
 // Objetivo: Provocar condición de carrera incrementando un contador desde múltiples goroutines,
 // luego arreglarla usando Mutex y/o atomic. Ejecuta con el detector de carrera:
-//   go run -race ./problema3
-// TODO: implementa las variantes pedidas.
+// go run -race ./problema3
+// implementa las variantes pedidas.
 
 // Variante insegura (condición de carrera):
 func incrementarInseguro(nGoroutines, nIncrementos int) int64 {
@@ -20,11 +20,16 @@ func incrementarInseguro(nGoroutines, nIncrementos int) int64 {
 
 	for i := 0; i < nGoroutines; i++ {
 		go func() {
-			// TODO: asegura wg.Done() se ejecuta al final
+			// asegura wg.Done() se ejecuta al final
+
+			//Se añade defer wg.Done para asegurar que se avise al WaitGroup que esta goroutine ha terminado
+			defer wg.Done() //Asegura que siempre se libera el WaitGroup
 
 			for j := 0; j < nIncrementos; j++ {
-				// TODO: incrementar de manera NO atómica (contador = contador + 1)
-
+				// incrementar de manera NO atómica (contador = contador + 1)
+				
+				//Se añade un contador
+				contador = contador + 1
 			}
 		}()
 	}
@@ -36,15 +41,19 @@ func incrementarInseguro(nGoroutines, nIncrementos int) int64 {
 // Variante con Mutex:
 func incrementarConMutex(nGoroutines, nIncrementos int) int64 {
 	var contador int64 = 0
-	// var mu 
-	// var wg 
+	 var mu sync.Mutex
+	var wg sync.WaitGroup
+
 	wg.Add(nGoroutines)
 
 	for i := 0; i < nGoroutines; i++ {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < nIncrementos; j++ {
-				// TODO: proteger la sección crítica con mu.Lock()/mu.Unlock()
+				// proteger la sección crítica con mu.Lock()/mu.Unlock()
+				mu.Lock()
+				contador = contador + 1
+				mu.Unlock()
 
 			}
 		}()
@@ -64,8 +73,9 @@ func incrementarConAtomic(nGoroutines, nIncrementos int) int64 {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < nIncrementos; j++ {
-				// TODO: usar atomic.AddInt64(&contador, 1)
-
+				// usar atomic.AddInt64(&contador, 1)
+				//se usa atomic para incrementar el contador de manera atomica
+				atomic.AddInt64(&contador, 1)
 			}
 		}()
 	}
@@ -92,3 +102,4 @@ func main() {
 
 	fmt.Println("Esperado correcto:", int64(nGoroutines*nIncrementos))
 }
+	
